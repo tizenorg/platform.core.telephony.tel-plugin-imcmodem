@@ -1,7 +1,7 @@
 #sbs-git:slp/pkgs/t/tel-plugin-imcmodem
 Name:       tel-plugin-imcmodem
 Summary:    telephony plugin library for AT communication with IMC modem
-Version:    0.1.0
+Version:    0.1.1
 Release:    1
 Group:      System/Libraries
 License:    Apache
