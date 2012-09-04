@@ -224,20 +224,16 @@ static gboolean _do_exception_operation( TcoreHal *h, int fd, GIOCondition con )
 	return TRUE;
 }
 
-static TReturn hal_power(TcoreHal *h, gboolean flag)
+static gboolean _power_on( gpointer data )
 {
-	//TcorePlugin *p = 0;
 	struct custom_data *user_data = 0;
-
+	TcoreHal *h = (TcoreHal*)data;
 	gboolean ret = 0;
 
 	user_data = tcore_hal_ref_user_data(h);
-	if (!user_data)
-		return TCORE_RETURN_FAILURE;
-
-	if (flag == FALSE) {
-		/* power off not support */
-		return TCORE_RETURN_FAILURE;
+	if (!user_data) {
+		dbg("[ error ] tcore_hal_ref_user_data()");
+		return FALSE;
 	}
 
 	ret = _ipc0_init( h, &user_data->ipc0, on_recv_ipc_message );
@@ -245,6 +241,18 @@ static TReturn hal_power(TcoreHal *h, gboolean flag)
 		dbg("[ error ] _ipc0_init()");
 
 	tcore_hal_set_power_state(h, TRUE);
+
+	return FALSE;
+}
+
+static TReturn hal_power(TcoreHal *h, gboolean flag)
+{
+	if (flag == FALSE) {
+		/* power off not support */
+		return TCORE_RETURN_FAILURE;
+	}
+
+	g_timeout_add_full( G_PRIORITY_HIGH, 500, _power_on, h, 0 );
 
 	return TCORE_RETURN_SUCCESS;
 }

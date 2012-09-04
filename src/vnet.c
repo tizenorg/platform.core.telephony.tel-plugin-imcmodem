@@ -142,7 +142,7 @@ int vnet_ipc0_open()
 			break ;
 		}
 
-		if ( ++cnt > 1000 )
+		if ( ++cnt > 20 )
 			return -1;
 	}
 
