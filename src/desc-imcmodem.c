@@ -229,16 +229,27 @@ static gboolean _power_on( gpointer data )
 	struct custom_data *user_data = 0;
 	TcoreHal *h = (TcoreHal*)data;
 	gboolean ret = 0;
+	static int count = 0;
 
 	user_data = tcore_hal_ref_user_data(h);
 	if (!user_data) {
 		dbg("[ error ] tcore_hal_ref_user_data()");
-		return FALSE;
+		return TRUE;
 	}
 
+	count++;
+
 	ret = _ipc0_init( h, &user_data->ipc0, on_recv_ipc_message );
-	if ( !ret )
+	if ( !ret ) {
 		dbg("[ error ] _ipc0_init()");
+
+		if ( count > 20 ) {
+			dbg("[ error ] _ipc0_init() timeout");
+			return FALSE;
+		}
+
+		return TRUE;
+	}
 
 	tcore_hal_set_power_state(h, TRUE);
 
@@ -379,6 +390,8 @@ static gboolean on_init(TcorePlugin *p)
 	 * HAL init
 	 */
 	h = tcore_hal_new(p, "6262", &hops, TCORE_HAL_MODE_AT);
+
+	tcore_hal_set_power_state(h, FALSE);
 	tcore_hal_link_user_data(h, data);
 
 	return TRUE;

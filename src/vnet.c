@@ -125,26 +125,15 @@ int vnet_ipc0_open()
 		return -1;
 	}
 
-	while ( 1 ) {
-
-		state = vnet_get_cp_state( fd );
-
-		if ( (enum vnet_cp_state)state != VNET_CP_STATE_ONLINE ) {
-			usleep(500000);
-
-		} else {
-			fd = open ( VNET_CH_PATH_IPC0, O_RDWR );
-			if ( fd < 0 ) {
-				dbg("error : open [ %s ] [ %s ]", VNET_CH_PATH_IPC0, strerror(errno));
+	state = vnet_get_cp_state( fd );
+	if ( (enum vnet_cp_state)state != VNET_CP_STATE_ONLINE ) {
+		return -1;
+	} else {
+		fd = open ( VNET_CH_PATH_IPC0, O_RDWR );
+		if ( fd < 0 ) {
+			dbg("error : open [ %s ] [ %s ]", VNET_CH_PATH_IPC0, strerror(errno));
 			return -1;
-	}
-
-			break ;
 		}
-
-		if ( ++cnt > 20 )
-			return -1;
 	}
-
 	return fd;
 }
