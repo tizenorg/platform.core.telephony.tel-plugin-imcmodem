@@ -1,0 +1,21 @@
+Source: tel-plugin-imcmodem
+Section: libs
+Priority: extra
+Maintainer: Jongman Park <jman.park@samsung.com>
+Uploaders: Jayoung Gu <jygu@samsung.com>, Kyeongchul Kim <kyeongchul.kim@samsung.com>, Youngman Park <youngman.park@samsung.com>, Inho Oh <inho48.oh@samsung.com>,  DongHoo Park <donghoo.park@samsung.com>
+Build-Depends: debhelper (>= 5),
+               libglib2.0-dev, libtcore-dev, dlog-dev
+Standards-Version: 0.0.0
+
+Package: tel-plugin-imcmodem
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+Description: telephony plugin library for AT communication with IMC modem (Shared Object)
+
+Package: tel-plugin-imcmodem-dbg
+Section: debug
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, tel-plugin-imcmodem (= ${Source-Version})
+Description: telephony plugin library for AT communication with IMC modem (dbg package)
+
