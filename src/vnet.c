@@ -47,12 +47,17 @@
 #define __USE_GNU
 #endif
 
-
 #define MODEM_IMAGE_PATH		"/boot/modem.bin"
 #define NV_DIR_PATH				"/csa/nv"
 #define NV_FILE_PATH			NV_DIR_PATH"/nvdata.bin"
 
-#define VNET_CH_PATH_BOOT0	"/dev/umts_boot0"
+/*
+ * AP-CP comunication devices
+ */
+/* To track CP bootup */
+#define VNET_CH_PATH_BOOT0		"/dev/umts_boot0"
+
+/* Control communication channel */
 #define VNET_CH_PATH_IPC0		"/dev/umts_ipc0"
 
 #define IOCTL_MODEM_STATUS		_IO('o', 0x27)
@@ -61,79 +66,89 @@ void vnet_start_cp_ramdump()
 {
 	int ret;
 	ret = system("/usr/bin/xmm6262-boot -o u &");
-	dbg("system(/usr/bin/xmm6262-boot -o u &) ret[%d]",ret)
+	dbg("system(/usr/bin/xmm6262-boot -o u &) ret[%d]", ret)
 }
 
 void vnet_start_cp_reset()
 {
 	int ret;
 	ret = system("/usr/bin/xmm6262-boot &");
-	dbg("system(/usr/bin/xmm6262-boot &) ret[%d]",ret)
+	dbg("system(/usr/bin/xmm6262-boot &) ret[%d]", ret)
 }
 
-int vnet_get_cp_state( int fd )
+enum vnet_cp_state vnet_get_cp_state(int fd)
 {
-	enum vnet_cp_state state = VNET_CP_STATE_ONLINE;
+	enum vnet_cp_state state = VNET_CP_STATE_UNKNOWN;
+	dbg("Entry");
 
-	state =  ioctl( fd, IOCTL_MODEM_STATUS );
+	/* Get CP state */
+	state = ioctl(fd, IOCTL_MODEM_STATUS);
 
-	switch ( state ) {
+	switch (state) {
 	case VNET_CP_STATE_OFFLINE:
-		dbg("cp state : offline");
+		dbg("CP State: OFFLINE");
 		break;
 
 	case VNET_CP_STATE_CRASH_RESET:
-		dbg("cp state : crash_reset");
+		dbg("CP State: CRASH RESET");
 		break;
 
 	case VNET_CP_STATE_CRASH_EXIT:
-		dbg("cp state : crash_exit");
+		dbg("CP State: CRASH EXIT");
 		break;
 
 	case VNET_CP_STATE_BOOTING:
-		dbg("cp state : boot");
+		dbg("CP State: BOOT");
 		break;
 
 	case VNET_CP_STATE_ONLINE:
-		dbg("cp state : online");
+		dbg("CP State: ONLINE");
 		break;
 
 	case VNET_CP_STATE_NV_REBUILDING:
-		dbg("cp state : nv rebuild");
+		dbg("CP State: NV REBUILD");
 		break;
 
 	case VNET_CP_STATE_LOADER_DONE:
-		dbg("cp state : loader done");
+		dbg("CP State: LOADER DONE");
 		break;
 
+	case VNET_CP_STATE_UNKNOWN:
 	default:
-		dbg("cp state : unknown state");
-		return -1;
+		dbg("CP State: UNKNOWN State - [%d]", state);
+		break;
 	}
 
-	return (int)state;
+	return state;
 }
 
 int vnet_ipc0_open()
 {
-	int state;
-	int fd = 0;
+	enum vnet_cp_state state;
+	int fd;
+	dbg("Entry");
 
-	fd = open ( VNET_CH_PATH_BOOT0, O_RDWR );
-	if ( fd < 0 ) {
-		dbg("error : open [ %s ] [ %s ]", VNET_CH_PATH_BOOT0, strerror(errno));
+	/* Opening device to track CP state */
+	fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
+	if (fd < 0) {
+		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
 		return -1;
 	}
 
-		state = vnet_get_cp_state( fd );
-		if ( (enum vnet_cp_state)state != VNET_CP_STATE_ONLINE ) {
+	/* Track the state of CP */
+	state = vnet_get_cp_state(fd);
+	dbg("CP State: [%d]", state);
+	if (state != VNET_CP_STATE_ONLINE) {
+		err("CP is NOT yet Online!!!");
 		return -1;
-		} else {
-			fd = open ( VNET_CH_PATH_IPC0, O_RDWR );
-			if ( fd < 0 ) {
-				dbg("error : open [ %s ] [ %s ]", VNET_CH_PATH_IPC0, strerror(errno));
+	} else {
+		/* Opening AP-CP Control communication device */
+		fd = open(VNET_CH_PATH_IPC0, O_RDWR);
+		if (fd < 0) {
+			err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_IPC0, strerror(errno));
 			return -1;
-	}
 		}
+	}
+
 	return fd;
 }

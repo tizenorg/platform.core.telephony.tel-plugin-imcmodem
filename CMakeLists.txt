@@ -32,6 +32,7 @@ MESSAGE(${CMAKE_EXE_LINKER_FLAGS})
 SET(SRCS
 		src/desc-imcmodem.c
 		src/vnet.c
+		src/config.c		
 )
 
 

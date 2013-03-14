@@ -18,36 +18,18 @@
  * limitations under the License.
  */
 
-#ifndef _VNET_H_
-#define _VNET_H_
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* CP states */
-enum vnet_cp_state {
-	VNET_CP_STATE_UNKNOWN = -1,
-	VNET_CP_STATE_OFFLINE = 0,
-	VNET_CP_STATE_CRASH_RESET,
-	VNET_CP_STATE_CRASH_EXIT,
-	VNET_CP_STATE_BOOTING,
-	VNET_CP_STATE_ONLINE,
-	VNET_CP_STATE_NV_REBUILDING,
-	VNET_CP_STATE_LOADER_DONE,
-};
-
-void vnet_start_cp_ramdump( void );
-void vnet_start_cp_reset( void );
-
-enum vnet_cp_state vnet_get_cp_state( int fd );
-
-int vnet_rfs0_open( void );
-int vnet_ipc0_open( void );
+void config_check_cp_power(TcoreHal *hal);
 
 
 #ifdef __cplusplus
 }
 #endif	/* __cplusplus */
 
-#endif	/* _VNET_H_ */
+#endif	/* _CONFIG_H_ */
