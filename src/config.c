@@ -60,11 +60,11 @@
  *
  * CMUX Channels [0-7] -
  * Channel 0 - Control Channel for CMUX
- * Channel 1 - CALL
+ * Channel 1 - CALL & SS
  * Channel 2 - SIM & PHONEBOOK
  * Channel 3 - SAT & SAP
  * Channel 4 - SMS
- * Channel 5 - SS
+ * Channel 5 - PS
  * Channel 6 - NETWORK & GPS
  * Channel 7 - MODEM & PS
  */
@@ -77,7 +77,7 @@ unsigned int
 	 */
 	{0, 0, 0},
 	/* Channel 1 */
-	{CORE_OBJECT_TYPE_CALL, 0, 0},
+	{CORE_OBJECT_TYPE_CALL, CORE_OBJECT_TYPE_SS, 0},
 	/* Channel 2 */
 	{CORE_OBJECT_TYPE_SIM, CORE_OBJECT_TYPE_PHONEBOOK, 0},
 	/* Channel 3 */
@@ -85,11 +85,11 @@ unsigned int
 	/* Channel 4 */
 	{CORE_OBJECT_TYPE_SMS, 0, 0},
 	/* Channel 5 */
-	{CORE_OBJECT_TYPE_SS, 0, 0},
+	{CORE_OBJECT_TYPE_PS, 0, 0},
 	/* Channel 6 */
 	{CORE_OBJECT_TYPE_NETWORK, CORE_OBJECT_TYPE_GPS, 0},
 	/* Channel 7 */
-	{CORE_OBJECT_TYPE_MODEM, CORE_OBJECT_TYPE_PS, 0},
+	{CORE_OBJECT_TYPE_MODEM, 0, 0},
 };
 
 static gboolean _check_cp_poweron(TcoreHal *hal);
