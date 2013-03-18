@@ -46,6 +46,9 @@
 
 #define IMC_MAX_CP_POWER_ON_RETRIES			20
 
+#define IMC_DEVICE_NAME_LEN_MAX				16
+#define IMC_DEVICE_NAME_PREFIX				"pdp"
+
 #define VNET_CH_PATH_BOOT0  "/dev/umts_boot0"
 #define IOCTL_CG_DATA_SEND  _IO('o', 0x37)
 
@@ -366,6 +369,7 @@ static TReturn _hal_setup_netif(CoreObject *co,
 				gboolean enable)
 {
 	int fd;
+	char ifname[IMC_DEVICE_NAME_LEN_MAX];
 	int ret = -1;
 
 	/* Open device to send IOCTL command */
@@ -404,13 +408,29 @@ static TReturn _hal_setup_netif(CoreObject *co,
 	/* Close 'fd' */
 	close(fd);
 
+	/* TODO - Need to handle Failure case */
 	if (ret < 0) {
 		err("[ERROR] IOCTL_CG_DATA_SEND - FAIL [0x%x]", IOCTL_CG_DATA_SEND);
+
+		/* Invoke callback function */
+		if (func)
+			func(co, ret, NULL, user_data);
+
 		return TCORE_RETURN_FAILURE;
 	} else {
 		dbg("[OK] IOCTL_CG_DATA_SEND - PASS [0x%x]", IOCTL_CG_DATA_SEND);
+
+		/* Device name */
+		snprintf(ifname, IMC_DEVICE_NAME_LEN_MAX, "%s%d", IMC_DEVICE_NAME_PREFIX, (cid - 1));
+		dbg("Interface Name: [%s]", ifname);
+
+		/* Invoke callback function */
+		if (func)
+			func(co, ret, ifname, user_data);
+
 		return TCORE_RETURN_SUCCESS;
 	}
+
 }
 
 /* HAL Operations */
