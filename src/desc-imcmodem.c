@@ -368,11 +368,11 @@ static TReturn _hal_setup_netif(CoreObject *co,
 				void *user_data, unsigned int cid,
 				gboolean enable)
 {
-	int fd;
-	char ifname[IMC_DEVICE_NAME_LEN_MAX];
-	int ret = -1;
-
 	if (enable == TRUE) {
+		int fd;
+		char ifname[IMC_DEVICE_NAME_LEN_MAX];
+		int ret = -1;
+
 		dbg("ACTIVATE");
 
 		/* Open device to send IOCTL command */
@@ -435,6 +435,7 @@ static TReturn _hal_setup_netif(CoreObject *co,
 		}
 	} else {
 		dbg("DEACTIVATE");
+		return TCORE_RETURN_SUCCESS;
 	}
 }
 
