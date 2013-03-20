@@ -372,65 +372,70 @@ static TReturn _hal_setup_netif(CoreObject *co,
 	char ifname[IMC_DEVICE_NAME_LEN_MAX];
 	int ret = -1;
 
-	/* Open device to send IOCTL command */
-	fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
-	if (fd < 0) {
-		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
-		return TCORE_RETURN_FAILURE;
-	}
+	if (enable == TRUE) {
+		dbg("ACTIVATE");
 
-	/*
-	 * Send IOCTL to change the Channel to Data mode
-	 *
-	 * Presently only 2 Contexts are suported
-	 */
-	switch (cid) {
-	case 1:
-	{
-		dbg("Send IOCTL: arg 0x05 (0101) HSIC1, cid: [%d]", cid);
-		ret = ioctl(fd, IOCTL_CG_DATA_SEND, 0x05);
-	}
-	break;
+		/* Open device to send IOCTL command */
+		fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
+		if (fd < 0) {
+			err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
+			return TCORE_RETURN_FAILURE;
+		}
 
-	case 2:
-	{
-		dbg("Send IOCTL: arg 0x0A (1010) HSIC2, cid: [%d]", cid);
-		ret = ioctl(fd, IOCTL_CG_DATA_SEND, 0xA);
-	}
-	break;
+		/*
+		 * Send IOCTL to change the Channel to Data mode
+		 *
+		 * Presently only 2 Contexts are suported
+		 */
+		switch (cid) {
+		case 1:
+		{
+			dbg("Send IOCTL: arg 0x05 (0101) HSIC1, cid: [%d]", cid);
+			ret = ioctl(fd, IOCTL_CG_DATA_SEND, 0x05);
+		}
+		break;
 
-	default:
-	{
-		err("More than 2 Contexts are not supported right now!!! cid: [%d]", cid);
-	}
-	}
+		case 2:
+		{
+			dbg("Send IOCTL: arg 0x0A (1010) HSIC2, cid: [%d]", cid);
+			ret = ioctl(fd, IOCTL_CG_DATA_SEND, 0xA);
+		}
+		break;
 
-	/* Close 'fd' */
-	close(fd);
+		default:
+		{
+			err("More than 2 Contexts are not supported right now!!! cid: [%d]", cid);
+		}
+		}
 
-	/* TODO - Need to handle Failure case */
-	if (ret < 0) {
-		err("[ERROR] IOCTL_CG_DATA_SEND - FAIL [0x%x]", IOCTL_CG_DATA_SEND);
+		/* Close 'fd' */
+		close(fd);
 
-		/* Invoke callback function */
-		if (func)
-			func(co, ret, NULL, user_data);
+		/* TODO - Need to handle Failure case */
+		if (ret < 0) {
+			err("[ERROR] IOCTL_CG_DATA_SEND - FAIL [0x%x]", IOCTL_CG_DATA_SEND);
 
-		return TCORE_RETURN_FAILURE;
+			/* Invoke callback function */
+			if (func)
+				func(co, ret, NULL, user_data);
+
+			return TCORE_RETURN_FAILURE;
+		} else {
+			dbg("[OK] IOCTL_CG_DATA_SEND - PASS [0x%x]", IOCTL_CG_DATA_SEND);
+
+			/* Device name */
+			snprintf(ifname, IMC_DEVICE_NAME_LEN_MAX, "%s%d", IMC_DEVICE_NAME_PREFIX, (cid - 1));
+			dbg("Interface Name: [%s]", ifname);
+
+			/* Invoke callback function */
+			if (func)
+				func(co, ret, ifname, user_data);
+
+			return TCORE_RETURN_SUCCESS;
+		}
 	} else {
-		dbg("[OK] IOCTL_CG_DATA_SEND - PASS [0x%x]", IOCTL_CG_DATA_SEND);
-
-		/* Device name */
-		snprintf(ifname, IMC_DEVICE_NAME_LEN_MAX, "%s%d", IMC_DEVICE_NAME_PREFIX, (cid - 1));
-		dbg("Interface Name: [%s]", ifname);
-
-		/* Invoke callback function */
-		if (func)
-			func(co, ret, ifname, user_data);
-
-		return TCORE_RETURN_SUCCESS;
+		dbg("DEACTIVATE");
 	}
-
 }
 
 /* HAL Operations */
