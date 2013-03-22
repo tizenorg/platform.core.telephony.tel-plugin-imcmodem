@@ -67,6 +67,7 @@ typedef gboolean(*cb_func)(GIOChannel *channel, GIOCondition condition, gpointer
 static gboolean _on_recv_ipc_message(GIOChannel *channel, GIOCondition condition, gpointer data);
 
 static guint _register_gio_watch(TcoreHal *plugin, int fd, void *callback);
+static void _deregister_gio_watch(guint watch_id);
 
 
 /* Utility function to dump the Input/Output bytes (TX/RX Data) */
@@ -122,13 +123,21 @@ static guint _register_gio_watch(TcoreHal *hal, int fd, void *callback)
 	return source;
 }
 
+static void _deregister_gio_watch(guint watch_id)
+{
+	dbg("[VMODEM] Deregister Watch ID: [%d]", watch_id);
+
+	/* Remove source */
+	g_source_remove(watch_id);
+}
+
 static gboolean _ipc0_init(TcoreHal *hal, struct vnet_channel *ch, cb_func recv_message)
 {
 	dbg("Entry");
 
 	/* Remove and close the Watch ID and 'fd' if they already exist */
 	if (ch->fd >= 0) {
-		g_source_remove(ch->watch_id);
+		_deregister_gio_watch(ch->watch_id);
 		close(ch->fd);
 	}
 
@@ -150,11 +159,18 @@ static gboolean _ipc0_init(TcoreHal *hal, struct vnet_channel *ch, cb_func recv_
 
 static void _ipc0_deinit(struct vnet_channel *ch)
 {
-	g_source_remove(ch->watch_id);
-	close(ch->fd);
+	/* Remove and close the Watch ID and 'fd' */
+	dbg("Watch ID: [%d]", ch->watch_id);
+	if (ch->watch_id > 0)
+		_deregister_gio_watch(ch->watch_id);
+
+	dbg("fd: [%d]", ch->fd);
+	if (ch->fd > 0)
+		close(ch->fd);
 
 	ch->watch_id = 0;
 	ch->fd = 0;
+
 	ch->on = FALSE;
 }
 
@@ -284,6 +300,21 @@ static gboolean _power_on(gpointer data)
 
 	/* To stop the cycle need to return FALSE */
 	return FALSE;
+}
+
+static void _on_cmux_channel_close(TcoreHal *hal, gpointer user_data)
+{
+	TcorePlugin *plugin;
+
+	if (hal == NULL) {
+		err("HAL is NULL");
+		return;
+	}
+
+	plugin = tcore_hal_ref_plugin(hal);
+
+	/* Remove mapping Table */
+	tcore_server_remove_cp_mapping_tbl_entry(plugin, hal);
 }
 
 static enum tcore_hook_return _on_hal_send(TcoreHal *hal,
@@ -496,6 +527,9 @@ static gboolean on_init(TcorePlugin *plugin)
 	}
 	dbg("HAL [0x%x] created", hal);
 
+	/* Set HAL as Modem Interface Plug-in's User data */
+	tcore_plugin_link_user_data(plugin, hal);
+
 	/* Link Custom data to HAL's 'user_data' */
 	tcore_hal_link_user_data(hal, data);
 
@@ -519,12 +553,50 @@ static gboolean on_init(TcorePlugin *plugin)
 
 static void on_unload(TcorePlugin *plugin)
 {
+	TcoreHal *hal;
+	struct custom_data *user_data;
+
 	dbg("Unload!!!");
 
-	if (plugin == NULL)
+	if (plugin == NULL) {
+		err("Modem Interface Plug-in is NULL");
+		return;
+	}
+
+	/* Unload Modem Plug-in */
+	tcore_server_unload_modem_plugin(tcore_plugin_ref_server(plugin), plugin);
+
+	/* Unregister Modem Interface Plug-in from Server */
+	tcore_server_unregister_modem(tcore_plugin_ref_server(plugin), plugin);
+	dbg("Unregistered from Server");
+
+	/* HAL cleanup */
+	hal = tcore_plugin_ref_user_data(plugin);
+	if (hal == NULL) {
+		err("HAL is NULL");
+		return;
+	}
+
+	/* Close CMUX and CMUX channels */
+	tcore_cmux_close(hal, _on_cmux_channel_close, NULL);
+	dbg("CMUX is closed");
+
+	user_data = tcore_hal_ref_user_data(hal);
+	if (user_data == NULL)
 		return;
 
-	/* Need to Unload Modem Plugin */
+	/* Free HAL */
+	tcore_hal_free(hal);
+	dbg("Freed HAL");
+
+	/* Deinitialize the Physical Channel */
+	_ipc0_deinit(&user_data->ipc0);
+	dbg("Deinitialized the Channel");
+
+	/* Free custom data */
+	g_free(user_data);
+
+	dbg("Unloaded MODEM Interface Plug-in");
 }
 
 /* Modem Interface Plug-in descriptor */
