@@ -1,3 +1,4 @@
+#sbs-git:slp/pkgs/t/tel-plugin-imcmodem
 Name:       tel-plugin-imcmodem
 Summary:    telephony plugin library for AT communication with IMC modem
 Version:    0.1.4
@@ -19,7 +20,7 @@ imcmodem plugin for telephony
 %setup -q
 
 %build
-%cmake .
+cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix}
 make %{?jobs:-j%jobs}
 
 %post
@@ -28,11 +29,13 @@ make %{?jobs:-j%jobs}
 %postun -p /sbin/ldconfig
 
 %install
+rm -rf %{buildroot}
 %make_install
 mkdir -p %{buildroot}/usr/share/license
 
 %files
 %manifest tel-plugin-imcmodem.manifest
 %defattr(-,root,root,-)
+#%doc COPYING
 %{_libdir}/telephony/plugins/*
 /usr/share/license/tel-plugin-imcmodem
