@@ -66,14 +66,14 @@ void vnet_start_cp_ramdump()
 {
 	int ret;
 	ret = system("/usr/bin/xmm6262-boot -o u &");
-	dbg("system(/usr/bin/xmm6262-boot -o u &) ret[%d]", ret)
+	dbg("system(/usr/bin/xmm6262-boot -o u &) ret[%d]", ret);
 }
 
 void vnet_start_cp_reset()
 {
 	int ret;
 	ret = system("/usr/bin/xmm6262-boot &");
-	dbg("system(/usr/bin/xmm6262-boot &) ret[%d]", ret)
+	dbg("system(/usr/bin/xmm6262-boot &) ret[%d]", ret);
 }
 
 enum vnet_cp_state vnet_get_cp_state(int fd)

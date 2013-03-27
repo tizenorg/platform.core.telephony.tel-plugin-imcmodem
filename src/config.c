@@ -172,7 +172,7 @@ static void _on_cmux_channel_setup(int channel_id, TcoreHal *hal,
 
 	/* Set HAL state to Power ON (TRUE) */
 	tcore_hal_set_power_state(hal, TRUE);
-	dbg("HAL Power State: Power ON")
+	dbg("HAL Power State: Power ON");
 }
 
 static void _on_response_cmux_init(TcorePending *p, int data_len,
