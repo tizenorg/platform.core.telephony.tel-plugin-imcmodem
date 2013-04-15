@@ -283,7 +283,21 @@ static gboolean _power_on(gpointer data)
 		err("Failed to Create/Open CP interface - Try count: [%d]", count);
 
 		if (count > IMC_MAX_CP_POWER_ON_RETRIES) {
+			TcorePlugin *plugin = tcore_hal_ref_plugin(hal);
+			Server *server = tcore_plugin_ref_server(plugin);
+
 			err("Maximum timeout reached: [%d]", count);
+
+			/* Notify server a modem error occured */
+			tcore_server_send_notification(server, NULL,
+							TNOTI_SERVER_MODEM_ERR,
+							0, NULL);
+
+			tcore_server_unregister_modem(server, plugin);
+
+			tcore_hal_free(hal);
+			g_free(user_data);
+
 			return FALSE;
 		}
 
