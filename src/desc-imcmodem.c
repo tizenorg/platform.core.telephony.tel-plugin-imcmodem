@@ -293,8 +293,6 @@ static gboolean _power_on(gpointer data)
 							TNOTI_SERVER_MODEM_ERR,
 							0, NULL);
 
-			tcore_server_unregister_modem(server, plugin);
-
 			tcore_hal_free(hal);
 			g_free(user_data);
 
