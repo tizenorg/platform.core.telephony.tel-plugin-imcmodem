@@ -1,0 +1,8 @@
+Change-Id: Ic7fdbc2faafcbb924a5e58a0f5d70c4d6f44129b
+Code-Review+2: Ryan Ware <ware@linux.intel.com>
+Verified+1: Ryan Ware <ware@linux.intel.com>
+Submitted-by: Ryan Ware <ware@linux.intel.com>
+Submitted-at: Mon, 08 Jul 2013 10:06:45 -0700
+Reviewed-on: https://review.tizen.org/gerrit/4547
+Project: platform/core/telephony/tel-plugin-imcmodem
+Branch: refs/heads/tizen
