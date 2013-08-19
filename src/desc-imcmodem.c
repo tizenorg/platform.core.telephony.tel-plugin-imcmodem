@@ -507,21 +507,6 @@ static gboolean on_init(TcorePlugin *plugin)
 		return FALSE;
 	}
 
-#if 1	/* TODO - Need to remove this */
-	/*
-	 * CP is NOT coming to ONLINE state,
-	 * but when it is forceffuly reset using the command -
-	 *			xmm6262-boot
-	 * it comes back to ONLINE state.
-	 *
-	 * We need to look into this aspect
-	 */
-	dbg("====== TRIGGERING CP RESET ======");
-	vnet_start_cp_reset();
-	dbg("====== CP RESET TRIGGERED ======");
-	sleep(2);
-#endif	/* TODO - Need to remove this */
-
 	/* Custom data for Modem Interface Plug-in */
 	data = g_try_new0(struct custom_data, 1);
 	if (data == NULL) {
