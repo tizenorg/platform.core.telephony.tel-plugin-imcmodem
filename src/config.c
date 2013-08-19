@@ -42,7 +42,7 @@
 #define IMC_MODEM_PLUGIN_NAME				"imc-plugin.so"
 
 #define IMC_CMUX_MAX_CHANNELS				7
-#define IMC_CMUX_MAX_BUFFER_SIZE			1024
+#define IMC_CMUX_MAX_BUFFER_SIZE			2048
 
 /* CP States */
 #define IMC_AT_CPAS_RESULT_READY			0
