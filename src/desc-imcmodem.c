@@ -1,9 +1,7 @@
 /*
  * tel-plugin-imcmodem
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * Contact: Kyoungyoup Park <gynaru.park@samsung.com>
+ * Copyright (c) 2013 Samsung Electronics Co. Ltd. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,37 +28,38 @@
 #include <glib.h>
 
 #include <tcore.h>
+#include <util.h>
 #include <server.h>
 #include <plugin.h>
 #include <storage.h>
-#include <user_request.h>
 #include <hal.h>
+#include <mux.h>
 
 #include "vnet.h"
 #include "config.h"
 
-#define IMC_HAL_NAME						"imcmodem"
-#define IMC_BUFFER_LEN_MAX					4096
+#define IMC_HAL_NAME			"imcmodem"
+#define IMC_BUFFER_LEN_MAX		4096
 
-#define IMC_CP_POWER_ON_TIMEOUT				500
+#define IMC_CP_POWER_ON_TIMEOUT	500
 
-#define IMC_MAX_CP_POWER_ON_RETRIES			20
+#define IMC_MAX_CP_POWER_ON_RETRIES	20
 
-#define IMC_DEVICE_NAME_LEN_MAX				16
-#define IMC_DEVICE_NAME_PREFIX				"pdp"
+#define IMC_DEVICE_NAME_LEN_MAX	16
+#define IMC_DEVICE_NAME_PREFIX	"pdp"
 
-#define VNET_CH_PATH_BOOT0  "/dev/umts_boot0"
-#define IOCTL_CG_DATA_SEND  _IO('o', 0x37)
+#define VNET_CH_PATH_BOOT0		"/dev/umts_boot0"
+#define IOCTL_CG_DATA_SEND		_IO('o', 0x37)
 
-struct vnet_channel {
+typedef struct {
 	int fd;
 	guint watch_id;
 	gboolean on;
-};
+} VnetChannel;
 
-struct custom_data {
-	struct vnet_channel ipc0;
-};
+typedef struct {
+	VnetChannel ipc0;
+} CustomData;
 
 typedef gboolean(*cb_func)(GIOChannel *channel, GIOCondition condition, gpointer data);
 
@@ -68,41 +67,6 @@ static gboolean _on_recv_ipc_message(GIOChannel *channel, GIOCondition condition
 
 static guint _register_gio_watch(TcoreHal *plugin, int fd, void *callback);
 static void _deregister_gio_watch(guint watch_id);
-
-
-/* Utility function to dump the Input/Output bytes (TX/RX Data) */
-static void _util_hex_dump(char *pad, int size, const void *data)
-{
-	char buffer[255] = {0, };
-	char hex[4] = {0, };
-	int i;
-	unsigned char *ptr;
-
-	if (size <= 0) {
-		msg("[%s] NO data", pad);
-		return;
-	}
-
-	ptr = (unsigned char *)data;
-
-	snprintf(buffer, 255, "%s%04X: ", pad, 0);
-	for (i = 0; i < size; i++) {
-		snprintf(hex, 4, "%02X ", ptr[i]);
-		strcat(buffer, hex);
-
-		if ((i + 1) % 8 == 0) {
-			if ((i + 1) % 16 == 0) {
-				msg("%s", buffer);
-				memset(buffer, 0, 255);
-				snprintf(buffer, 255, "%s%04X: ", pad, i + 1);
-			} else {
-				strcat(buffer, "  ");
-			}
-		}
-	}
-
-	msg("%s", buffer);
-}
 
 static guint _register_gio_watch(TcoreHal *hal, int fd, void *callback)
 {
@@ -116,7 +80,10 @@ static guint _register_gio_watch(TcoreHal *hal, int fd, void *callback)
 	channel = g_io_channel_unix_new(fd);
 
 	/* Add to Watch list for IO and HUP events */
-	source = g_io_add_watch(channel, G_IO_IN | G_IO_HUP, (GIOFunc) callback, hal);
+	source = g_io_add_watch(channel,
+			G_IO_IN | G_IO_HUP,
+			(GIOFunc) callback, hal);
+
 	g_io_channel_unref(channel);
 	channel = NULL;
 
@@ -131,7 +98,7 @@ static void _deregister_gio_watch(guint watch_id)
 	g_source_remove(watch_id);
 }
 
-static gboolean _ipc0_init(TcoreHal *hal, struct vnet_channel *ch, cb_func recv_message)
+static gboolean _ipc0_init(TcoreHal *hal, VnetChannel *ch, cb_func recv_message)
 {
 	dbg("Entry");
 
@@ -152,33 +119,37 @@ static gboolean _ipc0_init(TcoreHal *hal, struct vnet_channel *ch, cb_func recv_
 	/* Register Channel for IO */
 	ch->watch_id = _register_gio_watch(hal, ch->fd, recv_message);
 
+	/* Channel is ON */
 	ch->on = TRUE;
 
 	return ch->on;
 }
 
-static void _ipc0_deinit(struct vnet_channel *ch)
+static void _ipc0_deinit(VnetChannel *ch)
 {
-	/* Remove and close the Watch ID and 'fd' */
-	dbg("Watch ID: [%d]", ch->watch_id);
-	if (ch->watch_id > 0)
-		_deregister_gio_watch(ch->watch_id);
+	if (ch->on) {
+		dbg("Deinitializing the Channel - Watch ID: [%d] "
+			"fd: [%d]", ch->watch_id, ch->fd);
 
-	dbg("fd: [%d]", ch->fd);
-	if (ch->fd > 0)
-		close(ch->fd);
+		/* Remove and close the Watch ID and 'fd' */
+		if (ch->watch_id > 0)
+			_deregister_gio_watch(ch->watch_id);
 
-	ch->watch_id = 0;
-	ch->fd = 0;
+		if (ch->fd > 0)
+			close(ch->fd);
 
-	ch->on = FALSE;
+		ch->watch_id = 0;
+		ch->fd = 0;
+
+		ch->on = FALSE;
+	}
 }
 
 static gboolean _silent_reset(TcoreHal *hal)
 {
 	dbg("[ERROR] Silent Reset");
 
-	/* Set HAL Poer State to OFF (FALSE) */
+	/* Set HAL Power State to OFF (FALSE) */
 	tcore_hal_set_power_state(hal, FALSE);
 
 	/* TODO: Need to handle Silent Reset */
@@ -188,8 +159,8 @@ static gboolean _silent_reset(TcoreHal *hal)
 
 static gboolean _do_exception_operation(TcoreHal *hal, int fd, GIOCondition cond)
 {
-	enum vnet_cp_state state = VNET_CP_STATE_UNKNOWN;
-	struct custom_data *user_data = tcore_hal_ref_user_data(hal);
+	VnetCpState state = VNET_CP_STATE_UNKNOWN;
+	CustomData *user_data = tcore_hal_ref_user_data(hal);
 	dbg("Entry");
 
 	switch (cond) {
@@ -201,8 +172,7 @@ static gboolean _do_exception_operation(TcoreHal *hal, int fd, GIOCondition cond
 		}
 
 		switch (state) {
-		case VNET_CP_STATE_CRASH_EXIT:
-		{
+		case VNET_CP_STATE_CRASH_EXIT: {
 			err("CP Crash: Start ramdump");
 
 			_ipc0_deinit(&user_data->ipc0);
@@ -212,8 +182,7 @@ static gboolean _do_exception_operation(TcoreHal *hal, int fd, GIOCondition cond
 		}
 		break;
 
-		case VNET_CP_STATE_CRASH_RESET:
-		{
+		case VNET_CP_STATE_CRASH_RESET: {
 			err("CP Crash Reset");
 
 			_ipc0_deinit(&user_data->ipc0);
@@ -228,7 +197,8 @@ static gboolean _do_exception_operation(TcoreHal *hal, int fd, GIOCondition cond
 			}
 
 			/*
-			 * if current hal power state is FALSE, 'cp_reset' mean normal power off
+			 * if current hal power state is FALSE,
+			 * 'cp_reset' mean normal power off
 			 * (it's because of kernel concept)
 			 */
 			state = VNET_CP_STATE_OFFLINE;
@@ -259,7 +229,7 @@ static gboolean _do_exception_operation(TcoreHal *hal, int fd, GIOCondition cond
 
 static gboolean _power_on(gpointer data)
 {
-	struct custom_data *user_data;
+	CustomData *user_data;
 	TcoreHal *hal;
 	gboolean ret;
 
@@ -289,9 +259,8 @@ static gboolean _power_on(gpointer data)
 			err("Maximum timeout reached: [%d]", count);
 
 			/* Notify server a modem error occured */
-			tcore_server_send_notification(server, NULL,
-							TNOTI_SERVER_MODEM_ERR,
-							0, NULL);
+			tcore_server_send_server_notification(server,
+				TCORE_SERVER_NOTIFICATION_MODEM_ERR, 0, NULL);
 
 			tcore_hal_free(hal);
 			g_free(user_data);
@@ -329,32 +298,32 @@ static void _on_cmux_channel_close(TcoreHal *hal, gpointer user_data)
 	tcore_server_remove_cp_mapping_tbl_entry(plugin, hal);
 }
 
-static enum tcore_hook_return _on_hal_send(TcoreHal *hal,
-		unsigned int data_len, void *data, void *user_data)
+static TcoreHookReturn _on_hal_send(TcoreHal *hal,
+		guint data_len, void *data, void *user_data)
 {
 	msg("\n====== TX data DUMP ======\n");
-	_util_hex_dump("          ", data_len, data);
+	tcore_util_hex_dump("          ", data_len, data);
 	msg("\n====== TX data DUMP ======\n");
 
 	return TCORE_HOOK_RETURN_CONTINUE;
 }
 
 static void _on_hal_recv(TcoreHal *hal,
-		unsigned int data_len, const void *data, void *user_data)
+	guint data_len, const void *data, void *user_data)
 {
 	msg("\n====== RX data DUMP ======\n");
-	_util_hex_dump("          ", data_len, data);
+	tcore_util_hex_dump("          ", data_len, data);
 	msg("\n====== RX data DUMP ======\n");
 }
 
 static gboolean _on_recv_ipc_message(GIOChannel *channel,
-							GIOCondition condition, gpointer data)
+	GIOCondition condition, gpointer data)
 {
 	TcoreHal *hal = data;
-	struct custom_data *custom;
+	CustomData *custom;
 	char recv_buffer[IMC_BUFFER_LEN_MAX];
 	int recv_len = 0;
-	TReturn ret;
+	TelReturn ret;
 
 	custom = tcore_hal_ref_user_data(hal);
 
@@ -385,31 +354,30 @@ static gboolean _on_recv_ipc_message(GIOChannel *channel,
 	return TRUE;
 }
 
-static TReturn _hal_send(TcoreHal *hal, unsigned int data_len, void *data)
+static TelReturn _hal_send(TcoreHal *hal, guint data_len, void *data)
 {
 	int ret;
-	struct custom_data *user_data;
+	CustomData *user_data;
 
 	if (tcore_hal_get_power_state(hal) == FALSE)
-		return TCORE_RETURN_FAILURE;
+		return TEL_RETURN_FAILURE;
 
 	user_data = tcore_hal_ref_user_data(hal);
 	if (!user_data)
-		return TCORE_RETURN_FAILURE;
+		return TEL_RETURN_FAILURE;
 
 	dbg("write (fd=%d, len=%d)", user_data->ipc0.fd, data_len);
 
 	ret = write(user_data->ipc0.fd, (guchar *) data, data_len);
 	if (ret < 0)
-		return TCORE_RETURN_FAILURE;
+		return TEL_RETURN_FAILURE;
 
-	return TCORE_RETURN_SUCCESS;;
+	return TEL_RETURN_SUCCESS;;
 }
 
-static TReturn _hal_setup_netif(CoreObject *co,
-				TcoreHalSetupNetifCallback func,
-				void *user_data, unsigned int cid,
-				gboolean enable)
+static TelReturn _hal_setup_netif(CoreObject *co,
+	TcoreHalSetupNetifCallback func, void *user_data,
+	guint cid, gboolean enable)
 {
 	if (enable == TRUE) {
 		int fd;
@@ -421,8 +389,9 @@ static TReturn _hal_setup_netif(CoreObject *co,
 		/* Open device to send IOCTL command */
 		fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
 		if (fd < 0) {
-			err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
-			return TCORE_RETURN_FAILURE;
+			err("Failed to Open [%s] Error: [%s]",
+				VNET_CH_PATH_BOOT0, strerror(errno));
+			return TEL_RETURN_FAILURE;
 		}
 
 		/*
@@ -431,23 +400,21 @@ static TReturn _hal_setup_netif(CoreObject *co,
 		 * Presently only 2 Contexts are suported
 		 */
 		switch (cid) {
-		case 1:
-		{
+		case 1: {
 			dbg("Send IOCTL: arg 0x05 (0101) HSIC1, cid: [%d]", cid);
 			ret = ioctl(fd, IOCTL_CG_DATA_SEND, 0x05);
 		}
 		break;
 
-		case 2:
-		{
+		case 2: {
 			dbg("Send IOCTL: arg 0x0A (1010) HSIC2, cid: [%d]", cid);
 			ret = ioctl(fd, IOCTL_CG_DATA_SEND, 0xA);
 		}
 		break;
 
-		default:
-		{
-			err("More than 2 Contexts are not supported right now!!! cid: [%d]", cid);
+		default: {
+			err("More than 2 Contexts are not supported "
+				"right now!!! cid: [%d]", cid);
 		}
 		}
 
@@ -456,34 +423,37 @@ static TReturn _hal_setup_netif(CoreObject *co,
 
 		/* TODO - Need to handle Failure case */
 		if (ret < 0) {
-			err("[ERROR] IOCTL_CG_DATA_SEND - FAIL [0x%x]", IOCTL_CG_DATA_SEND);
+			err("[ERROR] IOCTL_CG_DATA_SEND - FAIL [0x%x]",
+				IOCTL_CG_DATA_SEND);
 
 			/* Invoke callback function */
 			if (func)
 				func(co, ret, NULL, user_data);
 
-			return TCORE_RETURN_FAILURE;
+			return TEL_RETURN_FAILURE;
 		} else {
-			dbg("[OK] IOCTL_CG_DATA_SEND - PASS [0x%x]", IOCTL_CG_DATA_SEND);
+			dbg("[OK] IOCTL_CG_DATA_SEND - PASS [0x%x]",
+				IOCTL_CG_DATA_SEND);
 
 			/* Device name */
-			snprintf(ifname, IMC_DEVICE_NAME_LEN_MAX, "%s%d", IMC_DEVICE_NAME_PREFIX, (cid - 1));
+			snprintf(ifname, IMC_DEVICE_NAME_LEN_MAX, "%s%d",
+				IMC_DEVICE_NAME_PREFIX, (cid - 1));
 			dbg("Interface Name: [%s]", ifname);
 
 			/* Invoke callback function */
 			if (func)
 				func(co, ret, ifname, user_data);
 
-			return TCORE_RETURN_SUCCESS;
+			return TEL_RETURN_SUCCESS;
 		}
 	} else {
 		dbg("DEACTIVATE");
-		return TCORE_RETURN_SUCCESS;
+		return TEL_RETURN_SUCCESS;
 	}
 }
 
 /* HAL Operations */
-static struct tcore_hal_operations hal_ops = {
+static TcoreHalOperations hal_ops = {
 	.power = NULL,
 	.send = _hal_send,
 	.setup_netif = _hal_setup_netif,
@@ -499,42 +469,24 @@ static gboolean on_load()
 static gboolean on_init(TcorePlugin *plugin)
 {
 	TcoreHal *hal;
-	struct custom_data *data;
+	CustomData *data;
 	dbg("Init!!!");
 
-	if (plugin == NULL) {
-		err("'plugin' is NULL");
-		return FALSE;
-	}
-
-#if 1	/* TODO - Need to remove this */
-	/*
-	 * CP is NOT coming to ONLINE state,
-	 * but when it is forceffuly reset using the command -
-	 *			xmm6262-boot
-	 * it comes back to ONLINE state.
-	 *
-	 * We need to look into this aspect
-	 */
-	dbg("====== TRIGGERING CP RESET ======");
-	vnet_start_cp_reset();
-	dbg("====== CP RESET TRIGGERED ======");
-	sleep(2);
-#endif	/* TODO - Need to remove this */
+	tcore_check_return_value_assert(plugin != NULL, FALSE);
 
 	/* Custom data for Modem Interface Plug-in */
-	data = g_try_new0(struct custom_data, 1);
-	if (data == NULL) {
-		err("Failed to allocate memory for Custom data");
-		return FALSE;
-	}
+	data = tcore_malloc0(sizeof(CustomData));
 	dbg("Created custom data memory");
 
+	/* Intialize for fd to -1 */
+	data->ipc0.fd = -1;
+
 	/* Create Physical HAL */
-	hal = tcore_hal_new(plugin, IMC_HAL_NAME, &hal_ops, TCORE_HAL_MODE_AT);
+	hal = tcore_hal_new(plugin, IMC_HAL_NAME,
+			&hal_ops, TCORE_HAL_MODE_AT);
 	if (hal == NULL) {
 		err("Failed to Create Physical HAL");
-		g_free(data);
+		tcore_free(data);
 		return FALSE;
 	}
 	dbg("HAL [0x%x] created", hal);
@@ -558,7 +510,8 @@ static gboolean on_init(TcorePlugin *plugin)
 	tcore_server_register_modem(tcore_plugin_ref_server(plugin), plugin);
 
 	/* Check CP Power ON */
-	g_timeout_add_full(G_PRIORITY_HIGH, IMC_CP_POWER_ON_TIMEOUT, _power_on, hal, 0);
+	g_timeout_add_full(G_PRIORITY_HIGH,
+		IMC_CP_POWER_ON_TIMEOUT, _power_on, hal, NULL);
 
 	return TRUE;
 }
@@ -566,14 +519,10 @@ static gboolean on_init(TcorePlugin *plugin)
 static void on_unload(TcorePlugin *plugin)
 {
 	TcoreHal *hal;
-	struct custom_data *user_data;
-
+	CustomData *user_data;
 	dbg("Unload!!!");
 
-	if (plugin == NULL) {
-		err("Modem Interface Plug-in is NULL");
-		return;
-	}
+	tcore_check_return_assert(plugin != NULL);
 
 	/* Unload Modem Plug-in */
 	tcore_server_unload_modem_plugin(tcore_plugin_ref_server(plugin), plugin);
@@ -594,25 +543,22 @@ static void on_unload(TcorePlugin *plugin)
 	dbg("CMUX is closed");
 
 	user_data = tcore_hal_ref_user_data(hal);
-	if (user_data == NULL)
-		return;
+
+	/* Deinitialize the Physical Channel */
+	_ipc0_deinit(&user_data->ipc0);
+
+	/* Free custom data */
+	tcore_free(user_data);
 
 	/* Free HAL */
 	tcore_hal_free(hal);
 	dbg("Freed HAL");
 
-	/* Deinitialize the Physical Channel */
-	_ipc0_deinit(&user_data->ipc0);
-	dbg("Deinitialized the Channel");
-
-	/* Free custom data */
-	g_free(user_data);
-
 	dbg("Unloaded MODEM Interface Plug-in");
 }
 
 /* Modem Interface Plug-in descriptor */
-struct tcore_plugin_define_desc plugin_define_desc = {
+EXPORT_API struct tcore_plugin_define_desc plugin_define_desc = {
 	.name = "imcmodem",
 	.priority = TCORE_PLUGIN_PRIORITY_HIGH,
 	.version = 1,

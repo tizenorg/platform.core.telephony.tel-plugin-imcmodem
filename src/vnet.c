@@ -1,9 +1,7 @@
 /*
  * tel-plugin-imcmodem
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
- *
- * Contact: Kyoungyoup Park <gynaru.park@samsung.com>
+ * Copyright (c) 2013 Samsung Electronics Co. Ltd. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,24 +45,28 @@
 #define __USE_GNU
 #endif
 
-#define MODEM_IMAGE_PATH		"/boot/modem.bin"
-#define NV_DIR_PATH				"/csa/nv"
-#define NV_FILE_PATH			NV_DIR_PATH"/nvdata.bin"
+/* Modem image */
+#define MODEM_IMAGE_PATH	"/boot/modem.bin"
+
+/* NV Data */
+#define NV_DIR_PATH		"/csa/nv"
+#define NV_FILE_PATH		NV_DIR_PATH"/nvdata.bin"
 
 /*
  * AP-CP comunication devices
  */
 /* To track CP bootup */
-#define VNET_CH_PATH_BOOT0		"/dev/umts_boot0"
+#define VNET_CH_PATH_BOOT0	"/dev/umts_boot0"
 
 /* Control communication channel */
-#define VNET_CH_PATH_IPC0		"/dev/umts_ipc0"
+#define VNET_CH_PATH_IPC0	"/dev/umts_ipc0"
 
-#define IOCTL_MODEM_STATUS		_IO('o', 0x27)
+#define IOCTL_MODEM_STATUS	_IO('o', 0x27)
 
 void vnet_start_cp_ramdump()
 {
 	int ret;
+
 	ret = system("/usr/bin/xmm6262-boot -o u &");
 	dbg("system(/usr/bin/xmm6262-boot -o u &) ret[%d]", ret);
 }
@@ -72,51 +74,51 @@ void vnet_start_cp_ramdump()
 void vnet_start_cp_reset()
 {
 	int ret;
+
 	ret = system("/usr/bin/xmm6262-boot &");
 	dbg("system(/usr/bin/xmm6262-boot &) ret[%d]", ret);
 }
 
-enum vnet_cp_state vnet_get_cp_state(int fd)
+VnetCpState vnet_get_cp_state(int fd)
 {
-	enum vnet_cp_state state = VNET_CP_STATE_UNKNOWN;
+	VnetCpState state = VNET_CP_STATE_UNKNOWN;
 	dbg("Entry");
 
 	/* Get CP state */
 	state = ioctl(fd, IOCTL_MODEM_STATUS);
-
 	switch (state) {
 	case VNET_CP_STATE_OFFLINE:
 		dbg("CP State: OFFLINE");
-		break;
+	break;
 
 	case VNET_CP_STATE_CRASH_RESET:
 		dbg("CP State: CRASH RESET");
-		break;
+	break;
 
 	case VNET_CP_STATE_CRASH_EXIT:
 		dbg("CP State: CRASH EXIT");
-		break;
+	break;
 
 	case VNET_CP_STATE_BOOTING:
 		dbg("CP State: BOOT");
-		break;
+	break;
 
 	case VNET_CP_STATE_ONLINE:
 		dbg("CP State: ONLINE");
-		break;
+	break;
 
 	case VNET_CP_STATE_NV_REBUILDING:
 		dbg("CP State: NV REBUILD");
-		break;
+	break;
 
 	case VNET_CP_STATE_LOADER_DONE:
 		dbg("CP State: LOADER DONE");
-		break;
+	break;
 
 	case VNET_CP_STATE_UNKNOWN:
 	default:
 		dbg("CP State: UNKNOWN State - [%d]", state);
-		break;
+	break;
 	}
 
 	return state;
@@ -124,14 +126,15 @@ enum vnet_cp_state vnet_get_cp_state(int fd)
 
 int vnet_ipc0_open()
 {
-	enum vnet_cp_state state;
+	VnetCpState state;
 	int fd;
 	dbg("Entry");
 
 	/* Opening device to track CP state */
 	fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
 	if (fd < 0) {
-		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
+		err("Failed to Open [%s] Error: [%s]",
+			VNET_CH_PATH_BOOT0, strerror(errno));
 		return -1;
 	}
 
@@ -145,7 +148,8 @@ int vnet_ipc0_open()
 		/* Opening AP-CP Control communication device */
 		fd = open(VNET_CH_PATH_IPC0, O_RDWR);
 		if (fd < 0) {
-			err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_IPC0, strerror(errno));
+			err("Failed to Open [%s] Error: [%s]",
+				VNET_CH_PATH_IPC0, strerror(errno));
 			return -1;
 		}
 	}

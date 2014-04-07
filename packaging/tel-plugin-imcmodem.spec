@@ -1,17 +1,21 @@
+%define major 3
+%define minor 0
+%define patchlevel 1
+
 Name:       tel-plugin-imcmodem
-Summary:    telephony plugin library for AT communication with IMC modem
-Version:    0.1.4
+Version:        %{major}.%{minor}.%{patchlevel}
 Release:    1
-Group:      System/Libraries
 License:    Apache-2.0
+Summary:        Telephony Plug-in for AT communication with IMC modem (Modem Interface Plug-in)
+Group:          System/Libraries
 Source0:    tel-plugin-imcmodem-%{version}.tar.gz
 Source1001: 	tel-plugin-imcmodem.manifest
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(tcore)
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
 
 %description
 imcmodem plugin for telephony
