@@ -12,7 +12,6 @@ Source0:    tel-plugin-imcmodem-%{version}.tar.gz
 Source1001: 	tel-plugin-imcmodem.manifest
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(glib-2.0)
-BuildRequires:  pkgconfig(dlog)
 BuildRequires:  pkgconfig(tcore)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
