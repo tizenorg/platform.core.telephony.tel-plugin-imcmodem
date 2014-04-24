@@ -141,6 +141,8 @@ int vnet_ipc0_open()
 	/* Track the state of CP */
 	state = vnet_get_cp_state(fd);
 	dbg("CP State: [%d]", state);
+	close(fd);
+
 	if (state != VNET_CP_STATE_ONLINE) {
 		err("CP is NOT yet Online!!!");
 		return -1;

@@ -144,7 +144,6 @@ static void _on_cmux_setup_complete(gpointer user_data)
 static void _on_cmux_channel_setup(guint channel_id,
 	TcoreHal *hal, gpointer user_data)
 {
-	TcorePlugin *plugin;
 	TcoreHal *phy_hal;
 	if ((hal == NULL) || (user_data == NULL))
 		return;
@@ -155,9 +154,8 @@ static void _on_cmux_channel_setup(guint channel_id,
 	}
 
 	phy_hal = user_data;
-	plugin = tcore_hal_ref_plugin(hal);
 
-	dbg("Channel ID: [%d] Logical HAL: [0x%x]", channel_id, hal);
+	dbg("Channel ID: [%d] Logical HAL: [0x%x] Physical HAL: [0x%x]", channel_id, hal, phy_hal);
 
 	/* Assign specifc Core Object types to the Logical HAL (CMUX Channel) */
 	_assign_objects_to_hal(channel_id, hal);
