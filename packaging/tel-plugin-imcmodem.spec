@@ -13,6 +13,7 @@ Source1001: 	tel-plugin-imcmodem.manifest
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(tcore)
+BuildRequires:  pkgconfig(tel-headers)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
