@@ -1,7 +1,9 @@
 /*
  * tel-plugin-imcmodem
  *
- * Copyright (c) 2013 Samsung Electronics Co. Ltd. All rights reserved.
+ * Copyright (c) 2012 Samsung Electronics Co., Ltd. All rights reserved.
+ *
+ * Contact: Kyoungyoup Park <gynaru.park@samsung.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef _CONFIG_H_
+#define _CONFIG_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,4 +32,4 @@ void config_check_cp_power(TcoreHal *hal);
 }
 #endif	/* __cplusplus */
 
-#endif	/* __CONFIG_H__ */
+#endif	/* _CONFIG_H_ */

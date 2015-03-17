@@ -11,7 +11,7 @@ SET(CMAKE_INSTALL_PREFIX "${PREFIX}")
 
 # Set required packages
 INCLUDE(FindPkgConfig)
-pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 tcore tel-headers)
+pkg_check_modules(pkgs REQUIRED glib-2.0 gthread-2.0 tcore dlog)
 
 FOREACH(flag ${pkgs_CFLAGS})
 	SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
@@ -25,15 +25,15 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_CFLAGS} -Wextra -Wno-unused-paramete
 
 ADD_DEFINITIONS("-DFEATURE_TLOG_DEBUG")
 ADD_DEFINITIONS("-DTCORE_LOG_TAG=\"IMCMODEM\"")
-ADD_DEFINITIONS("-DEXPORT_API=__attribute__((visibility(\"default\")))")
 
 MESSAGE(${CMAKE_C_FLAGS})
 MESSAGE(${CMAKE_EXE_LINKER_FLAGS})
 
 SET(SRCS
-		src/desc-imcmodem.c
-		src/vnet.c
-		src/config.c
+	src/desc-imcmodem.c
+	src/imcmodem.c
+	src/vnet.c
+	src/config.c
 )
 
 
