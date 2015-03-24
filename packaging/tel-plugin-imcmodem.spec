@@ -23,7 +23,8 @@ imcmodem plugin for telephony
 %setup -q
 
 %build
-%cmake .
+%cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+	-DLIB_INSTALL_DIR=%{_libdir}
 make %{?_smp_mflags}
 
 %post
