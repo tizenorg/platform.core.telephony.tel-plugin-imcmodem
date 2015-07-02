@@ -125,18 +125,22 @@ int vnet_ipc0_open()
 {
 	enum vnet_cp_state state;
 	int fd;
+	char buf[256];
+	const char *str = NULL;
+
 	dbg("Entry");
 
 	/* Opening device to track CP state */
 	fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
 	if (fd < 0) {
-		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
+		str = strerror_r(errno, buf, 256);
+		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, str);
 		return -1;
 	}
 
 	/* Track the state of CP */
 	state = vnet_get_cp_state(fd);
-	close (fd);
+	close(fd);
 
 	dbg("CP State: [%d]", state);
 	if (state != VNET_CP_STATE_ONLINE) {
@@ -147,7 +151,8 @@ int vnet_ipc0_open()
 	/* Opening AP-CP Control communication device */
 	fd = open(VNET_CH_PATH_IPC0, O_RDWR);
 	if (fd < 0) {
-		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_IPC0, strerror(errno));
+		str = strerror_r(errno, buf, 256);
+		err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_IPC0, str);
 		return -1;
 	}
 

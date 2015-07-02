@@ -1,6 +1,6 @@
 %define major 0
 %define minor 1
-%define patchlevel 10
+%define patchlevel 14
 
 Name:             tel-plugin-imcmodem
 Version:          %{major}.%{minor}.%{patchlevel}
@@ -39,6 +39,6 @@ cp LICENSE %{buildroot}/usr/share/license/%{name}
 
 %files
 %manifest tel-plugin-imcmodem.manifest
-%defattr(-,root,root,-)
+%defattr(644,system,system,-)
 %{_libdir}/telephony/plugins/*
 /usr/share/license/%{name}

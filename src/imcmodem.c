@@ -219,7 +219,7 @@ static gboolean imcmodem_power_on(gpointer data)
 	static int count = 0;
 	dbg("Entry");
 
-	hal = (TcoreHal*)data;
+	hal = (TcoreHal *)data;
 
 	custom_data = tcore_hal_ref_user_data(hal);
 	if (custom_data == NULL) {
@@ -315,6 +315,8 @@ static gboolean _on_recv_ipc_message(GIOChannel *channel,
 	char recv_buffer[IMC_BUFFER_LEN_MAX];
 	int recv_len = 0;
 	TReturn ret;
+	char buf[256];
+	const char *str = NULL;
 
 	custom_data = tcore_hal_ref_user_data(hal);
 	if (custom_data == NULL) {
@@ -333,7 +335,8 @@ static gboolean _on_recv_ipc_message(GIOChannel *channel,
 	/* Receive data from device */
 	recv_len = read(custom_data->ipc0.fd, (guchar *)recv_buffer, IMC_BUFFER_LEN_MAX);
 	if (recv_len < 0) {
-		err("[READ] recv_len: [%d] Error: [%s]", recv_len,  strerror(errno));
+		str = strerror_r(errno, buf, 256);
+		err("[READ] recv_len: [%d] Error: [%s]", recv_len, str);
 		return TRUE;
 	}
 
@@ -380,13 +383,16 @@ static TReturn imcmodem_hal_setup_netif(CoreObject *co,
 		int fd;
 		char ifname[IMC_DEVICE_NAME_LEN_MAX];
 		int ret = -1;
+		char buf[256];
+		const char *str = NULL;
 
 		dbg("ACTIVATE");
 
 		/* Open device to send IOCTL command */
 		fd = open(VNET_CH_PATH_BOOT0, O_RDWR);
 		if (fd < 0) {
-			err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, strerror(errno));
+			str = strerror_r(errno, buf, 256);
+			err("Failed to Open [%s] Error: [%s]", VNET_CH_PATH_BOOT0, str);
 			return TCORE_RETURN_FAILURE;
 		}
 

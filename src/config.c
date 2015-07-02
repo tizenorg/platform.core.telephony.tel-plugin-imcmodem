@@ -72,8 +72,7 @@
  * Channel 7 - MODEM & PS
  */
 unsigned int
-	supported_modules[IMC_CMUX_MAX_CHANNELS+1][MAX_CORE_OBJECTS_PER_CHANNEL] =
-{
+	supported_modules[IMC_CMUX_MAX_CHANNELS+1][MAX_CORE_OBJECTS_PER_CHANNEL] = {
 	/*
 	 * Channel 0 - CMUX Control Channel
 	 * No Core Objects would be assigned to this channel
@@ -141,11 +140,10 @@ static void _assign_objects_to_hal(int channel_id, TcoreHal *hal, TcoreHal *phy_
 		/* Add Core Object type for specific 'hal' */
 		ret = tcore_server_add_cp_mapping_tbl_entry(modem,
 				supported_modules[channel_id][i], hal);
-		if (ret == TRUE) {
+		if (ret == TRUE)
 			dbg("Core Object Type: [0x%x] - Success");
-		} else {
+		else
 			err("Core Object Type: [0x%x] - Fail");
-		}
 	}
 }
 
@@ -235,19 +233,17 @@ static void _on_response_enable_logging(TcorePending *p,
 	TcoreHal *hal = user_data;
 	TReturn ret;
 
-	if ((resp != NULL) && resp->success) {
+	if ((resp != NULL) && resp->success)
 		dbg("Enable CP logging - [OK]");
-	} else {
+	else
 		err("Enable CP logging - [NOK]");
-	}
 
 	/* Initialize Internal MUX (CMUX) */
 	ret = tcore_cmux_init(hal, 0, _on_response_cmux_init, hal);
-	if (ret != TCORE_RETURN_SUCCESS) {
+	if (ret != TCORE_RETURN_SUCCESS)
 		err("Failed to initialize CMUX - Error: [0x%x]", ret);
-	} else {
+	else
 		dbg("Successfully sent CMUX init to CP");
-	}
 }
 
 static void _on_timeout_check_cp_poweron(TcorePending *p, void *user_data)
@@ -346,6 +342,11 @@ static void _send_enable_logging_command(TcoreHal *hal)
 	at_req = tcore_at_request_new(IMCMODEM_AT_CMD_XTRACE_ENABLE,
 					NULL, TCORE_AT_NO_RESULT);
 
+	if (at_req  == NULL) {
+		tcore_pending_free(pending);
+		return;
+	}
+
 	dbg("AT-Command: [%s] Prefix(if any): [%s] Command length: [%d]",
 		at_req->cmd, at_req->prefix, strlen(at_req->cmd));
 
@@ -375,6 +376,11 @@ static gboolean _check_cp_poweron(TcoreHal *hal)
 
 	/* Create AT Request */
 	at_req = tcore_at_request_new("AT+CPAS", "+CPAS:", TCORE_AT_SINGLELINE);
+
+	if (at_req  == NULL) {
+		tcore_pending_free(pending);
+		return FALSE;
+	}
 
 	dbg("AT-Command: [%s] Prefix(if any): [%s] Command length: [%d]",
 		at_req->cmd, at_req->prefix, strlen(at_req->cmd));
@@ -412,9 +418,8 @@ void config_check_cp_power(TcoreHal *hal)
 		return;
 
 	ret = _check_cp_poweron(hal);
-	if (ret == TRUE) {
+	if (ret == TRUE)
 		dbg("Successfully sent check CP Power ON command");
-	} else {
+	else
 		err("Failed to send check CP Power ON command");
-	}
 }
